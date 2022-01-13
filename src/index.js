@@ -1,70 +1,79 @@
 import { createStore } from "redux";
 
-const add = document.getElementById("add");
-const minus = document.getElementById("minus");
-const number = document.querySelector("span");
+const form = document.querySelector("form");
+const input = document.querySelector("input");
+const ul = document.querySelector("ul");
 
-// Second Improvement
-// string 을 직접 사용하면 오타 발생시 자바스크립트에서 에러를 띄우지 못함
-const ADD = "add";
-const MINUS = "minus";
+const ADD_TODO = "ADD_TODO";
+const DELETE_TODO = "DELETE_TODO";
 
-const counterModifier = (count = 0, action) => {
-  // console.log(count, action);
-  // return state;
+// 코드 최적화
+const addTodo = (text) => {
+  return {
+    type: ADD_TODO,
+    text,
+    id: Date.now(),
+  };
+};
+const deleteTodo = (id) => {
+  return {
+    type: DELETE_TODO,
+    id,
+  };
+};
 
-  // if (action.type === "add") {
-  //   // console.log("action type is add");
-  //   return count + 1;
-  // } else if (action.type === "minus") {
-  //   return count - 1;
-  // }
-  // return count;
-
-  // Frist Improvement
+const reducer = (state = [], action) => {
+  // console.log(action);
   switch (action.type) {
-    case ADD:
-      return count + 1;
-    case MINUS:
-      return count - 1;
+    case ADD_TODO:
+      return [...state, { text: action.text, id: action.id }]; // Date 바로 쓰는걸 지양하라고 하네용
+    case DELETE_TODO:
+      return state.filter((todo) => todo.id !== parseInt(action.id)); // html 에서 받아오는 정보는 string 일 확률이 높음
     default:
-      return count;
+      return state;
   }
 };
 
-const countStore = createStore(counterModifier);
+const store = createStore(reducer);
 
-// countStore.dispatch({ type: "add" });
-// console.log(countStore.getState());
+// const createTodo = (todo) => {
+//   const li = document.createElement("li");
+//   li.innerText = todo;
+//   ul.appendChild(li);
+// };
 
-const onChange = () => {
-  // console.log("there was a change on the store");
-  // console.log(countStore.getState());
-  number.innerText = countStore.getState();
+const dispatchAddTodo = (text) => {
+  store.dispatch(addTodo(text));
+};
+const dispatchDeleteTodo = (e) => {
+  // console.log(e.target.parentNode.id, "text delete");
+  const id = e.target.parentNode.id;
+  store.dispatch(deleteTodo(id));
 };
 
-countStore.subscribe(onChange);
+// store.subscribe(() => console.log(store.getState()));
 
-add.addEventListener("click", () => countStore.dispatch({ type: ADD }));
-minus.addEventListener("click", () => countStore.dispatch({ type: MINUS }));
+const paintTodos = () => {
+  const todos = store.getState(); // state 에 계속 리스트가 누적되기 때문에
+  ul.innerHTML = ""; // 이전에 작성했던 리스트 리페인팅 되는 문제 해결하기 위해 ul 리셋해주기
+  todos.forEach((todo) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.innerText = "Del";
+    btn.addEventListener("click", dispatchDeleteTodo);
+    li.id = todo.id;
+    li.innerText = todo.text;
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+};
+store.subscribe(paintTodos);
 
-// 바닐라 JS
-// let count = 0;
+const onSubmit = (e) => {
+  e.preventDefault();
+  const todo = input.value;
+  input.value = ""; // input 창 리셋
+  dispatchAddTodo(todo);
+};
 
-// number.innerText = count;
-
-// const updateText = () => {
-//   number.innerText = count;
-// };
-
-// const handleAdd = () => {
-//   count++;
-//   updateText();
-// };
-// const handleMinus = () => {
-//   count--;
-//   updateText();
-// };
-
-// add.addEventListener("click", handleAdd);
-// minus.addEventListener("click", handleMinus);
+form.addEventListener("submit", onSubmit);
